@@ -1,104 +1,83 @@
-KorfLab Genomic Features FTX
-============================
+KorfLab Genomic Features
+========================
 
-This repo formalizes the KorfLab-flavored Fielded Text Format we use to
-describe genome sequence features. It's a GFF-adjacent format that simplifies
-the description of complex entities like genes (which are composed of
-transcripts) and transcripts (which are composed of exons and introns).
-
-This is in a _very_ drafty state
+This repo formalizes the KorfLab Genomic Features (.kgf) file format we use
+that simplifies the description of some complex entities like genes (which are
+composed of transcripts) and transcripts (which are composed of exons and
+introns).
 
 ## Quick Start ##
 
-- How to format the most common things
+- How to format the most common thing
 - How to validate legal FTX
 - How to interchange with GFF3 etc
 
-chr1|re|a101|+|10-20|
-chr1|tx|unc-102/unc-102.1|+|100-200,300-400|
-chr1|tx|unc-102/unc-102.1|+|100-200,300-400|
-
-
-chr1[rs]
-
-chr1|gene-1|+|100-200,300-400,500-600|
-chr2|gene-2|-|100-200,300-400,500-600|extra free text
-chr1|gene-1|+|100-200,300-400,500-600|~chr1|gene-1|+|100-200,300-400,500-600|
+I:101-300|re|+|1-200|rep1            # repeat sequence
+I:101-300|lc|=|1-200|            # low-complexity sequence
+I:101-300|tx|+|1-200|            # non-spliced transcript on + strand
+I:101-300|tx|-|1-50,151-200|     # spliced transcript on - strand
 
 
 ## Specification ##
 
 - Lines beginning with a hash symbol, `#`, are comments
 - The field delimeter is the pipe symbol, `|`
-- There are 4 mandatory fields: chromosome, annotation, specification, position
-- There is 1 final optional field: info
-
-### Chromosome
-
-The chromosome field is used to specify which chromosome the feature is located
-on. The name of the chromosome should exactly match the identifier in some
-corresponding genome FASTA file. No whitespace is allowed. The pipe symbol is
-also not allowed.
-
-### Annotation
-
-The annotation field is a restricted vocabulary of digrams.
-
-- re: repetitive element
-- tx: transcript
-
-that corresponds to SO
-biological_region
-
-- pseudogene
-- 
+- Coordinates are all 1-based
+- There are 5 mandatory fields:
+  - Location
+  - Type
+  - Strand
+  - Structure
+  - Name
+- Whitspace is not allowed in mandatory fields
+- There is 1 optional field: info
 
 
-- gene - holds transcripts
-- tx - holds exons, may be coding
-- rep
--
+### Location
 
-| Char | Meaning |
-| na
-| pa
+The location of a feature is of two formats. `chr` is the name of a chromosome.
+Ideally, this matches the identifier in a FASTA file _exactly_. `pos` is used
+for a single nucleotide. `beg-end` is used for a coordinate pair where `beg` is
+always less than `end`.
 
+- `chr:pos`
+- `chr:beg-end`
 
-### Name
+The location string matches the common standard and is copy-pastable into
+genome browsers.
 
-Each feature has a name that is unique to the file.
+### Type
+
+The type of a feature is described as a digram.
+
+- `lo` low-complexity region
+- `re` repetitive element
+- `sa` sequence alignment
+- `tx` transcript
 
 ### Strand
 
-The strand for most features is plus or minus. However, some features, like
-low-complexity regions are strandless.
+The strand is a single character. When the feature is not stranded, for example
+low-complexity sequence, use `=`. Or should this just be blank?
 
 - `+` for plus-strand features
 - `-` for minus-strand features
 - `=` for strandless features
 
+### Structure
 
-### Coordinates
+The structure field is used to describe the feature in relative coordinates.
+For features that are split, combine with commas.
 
-1-based
+### Name
 
-Coordinates may be expresed as single numbers, ranges, or intervals
-
-- single numbers correspond to individual nucleotides (e.g. SNP)
-- ranges are pairs of begin-end values separated by a dash
-- intervals are comma-separated ranges
+Each feature has a name that is unique to the file. Transcript features must
+include a gene name akin to a directory path. Do all names have to be unqiue?
 
 
 ### Info
 
 The Info field can be used for several purposes
-
--
-
-Some keys are reserved
-
-- gene - used to show relationship between transcripts and genes
--
 
 
 
