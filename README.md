@@ -6,37 +6,57 @@ describe genome sequence features. It's a GFF-adjacent format that simplifies
 the description of complex entities like genes (which are composed of
 transcripts) and transcripts (which are composed of exons and introns).
 
+This is in a _very_ drafty state
+
 ## Quick Start ##
 
 - How to format the most common things
 - How to validate legal FTX
 - How to interchange with GFF3 etc
 
+chr1|re|a101|+|10-20|
+chr1|tx|unc-102/unc-102.1|+|100-200,300-400|
+chr1|tx|unc-102/unc-102.1|+|100-200,300-400|
+
+
+chr1[rs]
+
+chr1|gene-1|+|100-200,300-400,500-600|
+chr2|gene-2|-|100-200,300-400,500-600|extra free text
+chr1|gene-1|+|100-200,300-400,500-600|~chr1|gene-1|+|100-200,300-400,500-600|
 
 
 ## Specification ##
 
 - Lines beginning with a hash symbol, `#`, are comments
 - The field delimeter is the pipe symbol, `|`
-- There are 5 mandatory fields: Chromosome, Type, Name, Strand, Coordinates
-- The 6th field, Info, is optional
-- Whitespace is allowed only in the 6th field
+- There are 4 mandatory fields: chromosome, annotation, specification, position
+- There is 1 final optional field: info
 
 ### Chromosome
 
 The chromosome field is used to specify which chromosome the feature is located
 on. The name of the chromosome should exactly match the identifier in some
-corresponding genome FASTA file. This should be straighforward, except for
-unusual, multi-chromosome features. These need to be sorted out using the Info
-field.
+corresponding genome FASTA file. No whitespace is allowed. The pipe symbol is
+also not allowed.
 
-### Type
+### Annotation
 
-The Type field is a restricted vocabulary.
+The annotation field is a restricted vocabulary of digrams.
 
-- Gene - holds transcripts
-- Transcript - holds exons, may be coding
-- Repeat
+- re: repetitive element
+- tx: transcript
+
+that corresponds to SO
+biological_region
+
+- pseudogene
+- 
+
+
+- gene - holds transcripts
+- tx - holds exons, may be coding
+- rep
 -
 
 | Char | Meaning |
@@ -169,3 +189,4 @@ ftx elements.
 ```
 chr1|gene-1|+|100-200,300-400,500-600|~chr1|gene-1|+|100-200,300-400,500-600|
 ```
+
