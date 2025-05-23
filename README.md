@@ -1,8 +1,8 @@
 Kompressed Genomic Features
 ===========================
 
-This repo describes the Kompressed Genomic Features (.kgf) file format. It
-simplifies the description of some complex genomic entities like genes.
+This repo describes the Kompressed Genomic Features (.kgf) file format and
+provides a tool/library for validating and working with KGF records.
 
 ## Quick Start ##
 
@@ -69,11 +69,11 @@ tag-value information. The format here is `tag=value` with a semicolon
 separating multiple tag-value pairs. Again, no spaces are allowed (convert
 spaces to underscore).
 
-KGF works well embedded into FASTA file deflines. In this case, omit the
-chromosome and begin the record with a colon.
+KGF works well embedded into FASTA file deflines. In this case, one may omit
+the chromosome and begin the record with the chromosomal location
 
 ```
->chr1 :17-65|tx|+4|1-20,31-48|.|gene-x/tx-1 :17-65|tx|+14|1-48|.|gene-x/tx-2
+>chr1 17-65|tx|+4|1-20,31-48|.|gene-x/tx-1 17-65|tx|+14|1-48|.|gene-x/tx-2
 ACGTAAAAAAAAAACGTACGTATGATAGCGAATGTAGGAGATTTCAGAAAAGGTTTTATAACACGATCAT
 ```
 
@@ -113,7 +113,7 @@ described below.
 - `u5` five_prime_utr
 - `u3` three_prime_utr
 
-KGF digrams also include some things that are not in SO.
+KGF digrams also include some things that are not included in SO.
 
 - `ns` nucleotide similarity
 - `ps` protein similarity
@@ -121,9 +121,8 @@ KGF digrams also include some things that are not in SO.
 ### Strand
 
 The strand is a single character: `+` for plus strand, `-` for minus strand,
-and `.` for unstranded features. The `+` and `-` may be followed by a number.
-This is used in transcript features to indicate the length of the 5'UTR. In
-other words, it is the offset of the ATG.
+and `.` for unstranded features. The `+` and `-` may be followed by a number,
+which indicates the distance to the ATG.
 
 ### Structure
 
@@ -136,16 +135,18 @@ begins at 1, regardless of strand. For compound features consisting of multiple
 
 The score field is used to store an arbitrary numeric value. This is usually a
 log-odds score but may also be a P-value or E-value. When not specified, use a
-`.`. For records that need to record multiple scores, use the Info field.
+`.`. For records that need to keep track of multiple scores, use the Info
+field.
 
 ### Name
 
 Features are named somewhat like a `directory/file` hierarchy. Directories do
-not need to be unique, but the `file` token must be. This naming scheme allows
-one to give features generic categorizations and specific names. For example, a
-repeat feature may be named `Alu` generically or `Alu/AluJ/Alu751` to specify
-that the repeat belongs to the Alu family, the AluJ subfamily, and has a
-specific name of Alu751 if one wanted to reference it specifically.
+not need to be unique, but the `file` token must be globally unique within the
+file. This naming scheme allows one to give features generic categorizations
+and specific names. For example, a repeat feature may be named `Alu`
+generically or `Alu/AluJ/Alu751` to specify that the repeat belongs to the Alu
+family, the AluJ subfamily, and has a specific name of Alu751 if one wanted to
+reference it specifically.
 
 All `tx` features must specify both their gene name and transcript name as:
 `gene-name/unique-transcript-name`
@@ -153,12 +154,12 @@ All `tx` features must specify both their gene name and transcript name as:
 ## Philosophy ##
 
 One of the strengths of GFF is that it is line based, and therefore works with
-typical command line programs like `grep` and `perl`. The main problem with
-this is that line-based formats make it difficult to capture hierarchical
-structures. For example, genes are composed of transcripts, and transcripts are
-composed of exons, and possibly introns, start and stop codons, CDSs and UTRs.
-This multi-layered structure is difficult to visualize across multiple lines,
-especially when those lines may be physically separated by many lines.
+typical command line programs like `grep`. The main problem with this is that
+line-based formats make it difficult to capture hierarchical structures. For
+example, genes are composed of transcripts, and transcripts are composed of
+exons, and possibly introns, start and stop codons, CDSs and UTRs. This
+multi-layered structure is difficult to visualize across multiple lines,
+especially when those lines may be physically distant within a file.
 
 There is a lot of redundant text in GFF. While this compresses well, and
 therefore doesn't impose a huge overhead in storage, finding interesting
@@ -169,10 +170,11 @@ infer them from the positions of exons. This concept can be take further: given
 exons and a start codon, it's possible to infer CDSs, introns, phases, stops,
 and UTRs.
 
-Unlike GFF, KGF does not explicitly specify gene features. A gene is defined by
-its collection of transcripts and its position can be inferred from the extent
-of those transcripts. The gene name is embedded in each transcript as their
-parent _folder_. This is both simple and intuitive.
+Unlike GFF, KGF does not need to explicitly specify gene features. A gene is
+defined by its collection of transcripts and its position can be inferred from
+the extent of those transcripts. The gene name is embedded in each transcript
+as their parent _folder_. This is both simple and intuitive. One can always
+make a gene feature if they want.
 
 Genome browsers are an important part of daily life. GFF records don't lend
 themselves to easy copy-paste. For this reason, KGF uses the same syntax for
