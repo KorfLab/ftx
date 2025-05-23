@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-16"?>
-<FieldedText HeadingLineCount="2" DelimiterChar="|" LineCommentChar="#">
-  <Field Name="Chromosome" />
-  <Field Name="Type" />
-  <Field Name="Name" />
-  <Field Name="Strand" />
-  <Field Name="Coordinates" />
-  <Field Name="Info" />
-</FieldedText>

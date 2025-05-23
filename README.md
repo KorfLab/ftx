@@ -1,171 +1,145 @@
-KorfLab Genomic Features
-========================
+Kompressed Genomic Features
+===========================
 
-This repo formalizes the KorfLab Genomic Features (.kgf) file format we use
-that simplifies the description of some complex entities like genes (which are
-composed of transcripts) and transcripts (which are composed of exons and
-introns).
+This repo describes the Kompressed Genomic Features (.kgf) file format. It
+simplifies the description of some complex genomic entities like genes.
 
 ## Quick Start ##
 
-- How to format the most common thing
-- How to validate legal FTX
-- How to interchange with GFF3 etc
+Imagine the genomic locus below. It has a low-complexity region and a
+protein-coding gene with 2 alternative isoforms, one of which has an intron.
 
-I:101-300|re|+|1-200|rep1            # repeat sequence
-I:101-300|lc|=|1-200|            # low-complexity sequence
-I:101-300|tx|+|1-200|            # non-spliced transcript on + strand
-I:101-300|tx|-|1-50,151-200|     # spliced transcript on - strand
+```
+ACGTAAAAAAAAAACGTACGTATGATAGCGAATGTAGGAGATTTCAGAAAAGGTTTTATAACACGATCAT
+^        ^         ^         ^         ^         ^         ^         ^
+1        10        20        30        40        50        60        70
 
+    xxxxxxxxxx   5555MetIleAlaAsn------------AGLysArgPhe***333333
+    <---lc--->   <-----Exon-----><---Intron---><------Exon------> tx1
+
+                 55555555555555MetTrpGluLysSerGluLysValLeu***3333
+                 <---------------------Exon---------------------> tx2
+```
+
+Describing this in GFF is verbose and confusing (yeah, this isn't exactly GFF3,
+but it's easier to read with padding).
+
+```
+# GFF3-ish
+chr1 src low_complexity   5 15 . . .
+chr1 src gene            17 65 . + . ID=gene-x
+chr1 src mRNA            17 65 . + . ID=tx-1 Parent=gene-x
+chr1 src five_prime_utr  17 20 . + . Parent=tx-1
+chr1 src exon            17 33 . + . Parent=tx-1
+chr1 src cds             22 33 . + 0 Parent=tx-1
+chr1 src intron          34 47 . + . Parent=tx-1
+chr1 src cds             48 59 . + 0 Parent=tx-1
+chr1 src exon            48 65 . + . Parent=tx-1
+chr1 src three_prime_utr 60 65 . + . Parent=tx-1
+chr1 src mRNA            17 65 . + . ID=tx-2 Parent=gene-x
+chr1 src five_prime_utr  17 31 . + . Parent=tx-2
+chr1 src exon            17 65 . + . Parent=tx-2
+chr1 src cds             32 63 . + 0 Parent=tx-2
+chr1 src three_prime_utr 60 63 . + . Parent=tx-2
+```
+
+Describing this in KGF is much more compact and easier to read even without
+whitespace delimiters.
+
+```
+# KGF
+I:5-14|re|.|1-10|.|low-complexity
+I:17-65|tx|+4|1-20,31-48|.|gene-x/tx-1
+I:17-65|tx|+14|1-48|.|gene-x/tx-2
+```
 
 ## Specification ##
 
 - Lines beginning with a hash symbol, `#`, are comments
 - The field delimeter is the pipe symbol, `|`
 - Coordinates are all 1-based
-- There are 5 mandatory fields:
-  - Location
-  - Type
-  - Strand
-  - Structure
-  - Name
-- Whitspace is not allowed in mandatory fields
-- There is 1 optional field: info
-
+- There are 6 mandatory fields, none of which allow whitespace:
+  - Location - `chr:beg-end`
+  - Type - a controlled vocabulary of digrams
+  - Strand - plus or minus and offset for coding sequences, . for none
+  - Structure - describes spans `beg-end` and intevals `beg-end,beg-end`
+  - Score - a dot is used when there is no score
+  - Name - allows generic and unique ids, gene names are like folders
 
 ### Location
 
-The location of a feature is of two formats. `chr` is the name of a chromosome.
-Ideally, this matches the identifier in a FASTA file _exactly_. `pos` is used
-for a single nucleotide. `beg-end` is used for a coordinate pair where `beg` is
-always less than `end`.
-
-- `chr:pos`
-- `chr:beg-end`
-
-The location string matches the common standard and is copy-pastable into
-genome browsers.
+The location of a feature has 3 parts: chromosome, beginning coordinate, and
+ending coordinate: `chr:beg-end`. The begin is always smaller than the end. The
+location string matches the common standard used in genome browsers, and is
+therefore an easy copy-paste for viewing.
 
 ### Type
 
-The type of a feature is described as a digram.
+The type of a feature is a digram from a controlled vocabulary. The most
+important Type is `tx`, which is used for transcripts. This encapsulates exons,
+introns, CDSs and UTRs. However, if you want to specify individual components,
+you can.
 
-- `lo` low-complexity region
+- `tx` transcript
+- `ex` exon
+- `in` intron
+- `aa` coding sequence
+- `u5` 5' UTR
+- `u3` 3' UTR
 - `re` repetitive element
 - `sa` sequence alignment
-- `tx` transcript
+
 
 ### Strand
 
-The strand is a single character. When the feature is not stranded, for example
-low-complexity sequence, use `=`. Or should this just be blank?
-
-- `+` for plus-strand features
-- `-` for minus-strand features
-- `=` for strandless features
+The strand is a single character, either a plus or minus, optionally followed
+by a number. For non-stranded features, like a low-complexity region, strand is
+left blank. For transcripts that are translated, the distance from the 5' end
+to the start codon is given after the strand indicator.
 
 ### Structure
 
 The structure field is used to describe the feature in relative coordinates.
 For features that are split, combine with commas.
 
+### Score
+
+Score is an abitrary numeric field.
+
 ### Name
 
-Each feature has a name that is unique to the file. Transcript features must
-include a gene name akin to a directory path. Do all names have to be unqiue?
+The name of a feature may be unique or generic. Unique names are used for
+features like gene names. Generic feature names are used as sub-classifiers of
+type. For example, a repetitive element may have a sub-class as Alu.
 
 
-### Info
+## Philosophy ##
 
-The Info field can be used for several purposes
+One of the strengths of GFF is that it is line based, and therefore works with
+typical command line programs like `grep` and `perl`. The main problem with
+this is that line-based formats make it difficult to capture nested structures.
+For example, genes are composed of transcripts, and transcripts are composed of
+exons, and possibly introns, CDSs and UTRs. This multi-layered structure is
+difficult to visualize across multiple lines with many redundant text fields.
+We therefore sought to create a line-based format that also encapsulates gene
+structure.
 
+In GFF, the positions of introns are often left out, because one can always
+infer them from the positions of exons. KGF takes this a step further. Given
+exons and a start codon, it's possible to infer CDS, intron, and UTR.
 
+KGF does not explicitly specify gene features. A gene is defined by its
+collection of transcripts and its position can be inferred from the extent of
+those transcripts. The gene name is embedded in each transcript as the parent
+_folder_.
 
-## Meta File ##
-
-You will find the official `korflab_genomic_features.ftm` Meta File in the
-repo. It is unlikely you will need to use this explicitly.
-
-```
-<?xml version="1.0" encoding="utf-16"?>
-<FieldedText HeadingLineCount="2" DelimiterChar="|" LineCommentChar="#">
-  <Field Name="Chromosome" />
-  <Field Name="Type" />
-  <Field Name="Name" />
-  <Field Name="Strand" />
-  <Field Name="Coordinates" />
-  <Field Name="Info" />
-</FieldedText>
- ```
-
- It you want to make a Declared Fielded Text file, add this before any of the
- data lines.
-
- ```
-#|!Fielded Text^| Version="1.0"
-# MetaEmbedded="True"
-# <?xml version="1.0" encoding="utf-16"?>
-# <FieldedText HeadingLineCount="2" DelimiterChar="|" LineCommentChar="#">
-# <Field Name="Chromosome" />
-# <Field Name="Type" />
-# <Field Name="Name" />
-# <Field Name="Strand" />
-# <Field Name="Coordinates" />
-# <Field Name="Info" />
-# </FieldedText>
-```
-
-## Notes ##
-
-https://fieldedtext.org/
+The location is specified as `chr:begin-end` because this format is used in
+genome browsers. It's convenient to be able to copy-paste the chromosome
+coordinate token into genome browsers.
 
 
-## History ##
 
-The SABR project invented a custom record format to serialize gene structure
-annotation into a single token for embedding in FASTA/FASTQ identifiers. It was
-not intended to be used outside the study, but it proved to be so useful that
-we decided to use it more generally as our way of describing genome features.
-The original name meant 'flattened transcript format', but it turns out that
-the `.ftx` file extension means Fielded Text Format, which is a somewhat
-abstract MIME Type for any kind of text file with fields, such as tsv. So it
-turns out that the `.ftx` file extension is actually appropriate. The
-historical description of the format is as follows:
+- If one knows the position of the start codon, one can infer CDS and UTR
+- The parent child relationships of transcripts to genes is folder-esque
 
-- file extension: `.ftx`
-- field delimiter: `|`
-- 5 fields
-- no spaces in fields 1-4
-
-1. chromosome identifier
-2. name of gene/transcript/read/whatever
-3. strand indicator `+` or `-`
-4. exon structure:
-	- hyphen separated coordinates
-	- comma separated exons
-	- must be sorted left to right, low to high
-	- numbers are 1-based
-5. information: optional extra free text
-
-Example: Plus-strand transcript with introns at 201-299 and 401-499 and no
-extra information.
-
-```
-chr1|gene-1|+|100-200,300-400,500-600|
-```
-
-Example: Minus-strand transcript with some extra info.
-
-```
-chr2|gene-2|-|100-200,300-400,500-600|extra free text
-```
-
-Example: The information field can contain another ftx. This is used within
-SABR to attach a genomic source to all of its alignments (an aligner may
-provide more than one alignment). A `~` is often used as a delimiter between
-ftx elements.
-
-```
-chr1|gene-1|+|100-200,300-400,500-600|~chr1|gene-1|+|100-200,300-400,500-600|
-```
 
