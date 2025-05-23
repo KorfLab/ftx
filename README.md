@@ -6,24 +6,29 @@ simplifies the description of some complex genomic entities like genes.
 
 ## Quick Start ##
 
-Imagine the genomic locus below. It has a low-complexity region (LC) and a
-protein-coding gene (gene-x) with 2 alternative isoforms (tx-1, tx-2), one of
-which has an intron (tx-1).
+Examine the genomic locus below.
+
+- Low complexity region (LC) from 5-15
+- Gene (gene-x) from 17-65 with 2 isoforms
+	- tx-1 is spliced with start at 22
+	- tx-2 is unspliced with a start at 32
 
 ```
 ACGTAAAAAAAAAACGTACGTATGATAGCGAATGTAGGAGATTTCAGAAAAGGTTTTATAACACGATCAT
 ^        ^         ^         ^         ^         ^         ^         ^
 1        10        20        30        40        50        60        70
+    <---LC--->
+                 <----------------------------------------------> gene-x
 
-    xxxxxxxxxx   5555MetIleAlaAsn--------------LysArgPhe***333333
-    <---LC--->   <-----Exon-----><---Intron---><------Exon------> tx-1
+                 5555MetIleAlaAsn--------------LysArgPhe***333333
+                 <-----Exon-----><---Intron---><------Exon------> tx-1
 
                  55555555555555MetTrpGluLysSerGluLysValLeu***3333
                  <---------------------Exon---------------------> tx-2
 ```
 
-Describing this in GFF is verbose and confusing (yeah, this isn't exactly GFF3,
-but it's easier to read with padding).
+Describing this in GFF is verbose and confusing (note that this isn't exactly
+GFF3, which is tab-delimited, but it's easier to read with the padding).
 
 ```
 # GFF3-ish
@@ -44,8 +49,12 @@ chr1 src cds             32 63 . + 0 Parent=tx-2
 chr1 src three_prime_utr 60 63 . + . Parent=tx-2
 ```
 
-Describing this in KGF is much more compact and easier to read even without
-whitespace delimiters.
+Describing this in KGF is much more compact and has several conveniences that
+make it much more intuitive and useful for human readers. The location is the
+first field, and this is copy-pastable into genome browsers. The relative
+coordinates in field 4 allow one to think about the size of the locus without
+enormous genomic coordinates. The name follows a simple and intuitive
+directory/file scheme for nested features.
 
 ```
 # KGF
@@ -53,6 +62,7 @@ chr1:5-14|re|.|1-10|.|low-complexity
 chr1:17-65|tx|+4|1-20,31-48|.|gene-x/tx-1
 chr1:17-65|tx|+14|1-48|.|gene-x/tx-2
 ```
+
 
 ## Specification ##
 
@@ -76,19 +86,23 @@ therefore an easy copy-paste for viewing.
 
 ### Type
 
-The type of a feature is a digram from a controlled vocabulary. The most
-important Type is `tx`, which is used for transcripts. This encapsulates exons,
-introns, CDSs and UTRs. However, if you want to specify individual components,
-you can.
+Like GFF3, the type of a feature comes from the Sequence Ontolgy. In addition,
+some types are used so frequently that they have digram aliases. These are
+described below.
 
-- `tx` transcript
+- `cd` coding_region_of_exon
 - `ex` exon
 - `in` intron
-- `aa` coding sequence
-- `u5` 5' UTR
-- `u3` 3' UTR
-- `re` repetitive element
-- `sa` sequence alignment
+- `re` repeat_region
+- `tx` transcript
+- `u5` five_prime_utr
+- `u3` three_prime_utr
+
+KGF digrams also include some things that are not in SO.
+
+- `ns` nucleotide similarity
+- `ps` protein similarity
+
 
 
 ### Strand
@@ -123,12 +137,18 @@ Features other than `tx` may also use the `directory/file` naming convention.
 
 One of the strengths of GFF is that it is line based, and therefore works with
 typical command line programs like `grep` and `perl`. The main problem with
-this is that line-based formats make it difficult to capture nested structures.
-For example, genes are composed of transcripts, and transcripts are composed of
-exons, and possibly introns, CDSs and UTRs. This multi-layered structure is
-difficult to visualize across multiple lines with many redundant text fields.
-We therefore sought to create a line-based format that also encapsulates gene
-structure.
+this is that line-based formats make it difficult to capture hierarchical
+structures. For example, genes are composed of transcripts, and transcripts are
+composed of exons, and possibly introns, start and stop codons, CDSs and UTRs.
+This multi-layered structure is difficult to visualize across multiple lines
+with many redundant text fields. We therefore sought to create a line-based
+format that also encapsulates gene structure.
+
+The location is specified as `chr:begin-end` because this format is used in
+genome browsers. Being able to copy-paste the chromosome coordinate token into
+genome browsers is a big time-saver.
+
+There is a lot of redundant text in GFF.
 
 In GFF, the positions of introns are often left out because one can always
 infer them from the positions of exons. KGF takes this a step further. Given
@@ -136,9 +156,11 @@ exons and a start codon, it's possible to infer CDS, intron, and UTR.
 
 Unlike GFF, KGF does not explicitly specify gene features. A gene is defined by
 its collection of transcripts and its position can be inferred from the extent
-of those transcripts. The gene name is embedded in each transcript as the
-parent _folder_.
+of those transcripts. The gene name is embedded in each transcript as their
+parent _folder_. This is both simple and intuitive.
 
-The location is specified as `chr:begin-end` because this format is used in
-genome browsers. It's convenient to be able to copy-paste the chromosome
-coordinate token into genome browsers.
+
+
+lost
+individual scores
+indifiviual sources
