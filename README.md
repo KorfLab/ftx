@@ -48,9 +48,9 @@ whitespace delimiters.
 
 ```
 # KGF
-I:5-14|re|.|1-10|.|low-complexity
-I:17-65|tx|+4|1-20,31-48|.|gene-x/tx-1
-I:17-65|tx|+14|1-48|.|gene-x/tx-2
+chr1:5-14|re|.|1-10|.|low-complexity
+chr1:17-65|tx|+4|1-20,31-48|.|gene-x/tx-1
+chr1:17-65|tx|+14|1-48|.|gene-x/tx-2
 ```
 
 ## Specification ##
