@@ -6,19 +6,20 @@ simplifies the description of some complex genomic entities like genes.
 
 ## Quick Start ##
 
-Imagine the genomic locus below. It has a low-complexity region and a
-protein-coding gene with 2 alternative isoforms, one of which has an intron.
+Imagine the genomic locus below. It has a low-complexity region (LC) and a
+protein-coding gene (gene-x) with 2 alternative isoforms (tx-1, tx-2), one of
+which has an intron (tx-1).
 
 ```
 ACGTAAAAAAAAAACGTACGTATGATAGCGAATGTAGGAGATTTCAGAAAAGGTTTTATAACACGATCAT
 ^        ^         ^         ^         ^         ^         ^         ^
 1        10        20        30        40        50        60        70
 
-    xxxxxxxxxx   5555MetIleAlaAsn------------AGLysArgPhe***333333
-    <---lc--->   <-----Exon-----><---Intron---><------Exon------> tx1
+    xxxxxxxxxx   5555MetIleAlaAsn--------------LysArgPhe***333333
+    <---LC--->   <-----Exon-----><---Intron---><------Exon------> tx-1
 
                  55555555555555MetTrpGluLysSerGluLysValLeu***3333
-                 <---------------------Exon---------------------> tx2
+                 <---------------------Exon---------------------> tx-2
 ```
 
 Describing this in GFF is verbose and confusing (yeah, this isn't exactly GFF3,
@@ -108,9 +109,14 @@ Score is an abitrary numeric field.
 
 ### Name
 
-The name of a feature may be unique or generic. Unique names are used for
-features like gene names. Generic feature names are used as sub-classifiers of
-type. For example, a repetitive element may have a sub-class as Alu.
+Features are named somewhat like a `directory/file` hierarchy. Directories do
+not need to be unique, but the `directory/file` token must be. This naming
+scheme allows one to give features generic or specific names.
+
+All `tx` features must specify both their gene name and transcript name as:
+`gene-name/unique-transcript-name`
+
+Features other than `tx` may also use the `directory/file` naming convention.
 
 
 ## Philosophy ##
@@ -124,22 +130,15 @@ difficult to visualize across multiple lines with many redundant text fields.
 We therefore sought to create a line-based format that also encapsulates gene
 structure.
 
-In GFF, the positions of introns are often left out, because one can always
+In GFF, the positions of introns are often left out because one can always
 infer them from the positions of exons. KGF takes this a step further. Given
 exons and a start codon, it's possible to infer CDS, intron, and UTR.
 
-KGF does not explicitly specify gene features. A gene is defined by its
-collection of transcripts and its position can be inferred from the extent of
-those transcripts. The gene name is embedded in each transcript as the parent
-_folder_.
+Unlike GFF, KGF does not explicitly specify gene features. A gene is defined by
+its collection of transcripts and its position can be inferred from the extent
+of those transcripts. The gene name is embedded in each transcript as the
+parent _folder_.
 
 The location is specified as `chr:begin-end` because this format is used in
 genome browsers. It's convenient to be able to copy-paste the chromosome
 coordinate token into genome browsers.
-
-
-
-- If one knows the position of the start codon, one can infer CDS and UTR
-- The parent child relationships of transcripts to genes is folder-esque
-
-
